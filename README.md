@@ -37,11 +37,34 @@ module "computer_shop" {
 | `project` | Name prefix for resources and tags | `computer-shop` |
 | `cors_allow_origins` | Comma-separated CORS origins for the API | `""` |
 | `github_deploy_repos` | Repos (owner/name) allowed to assume the deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
+| `api_throttle_rate_limit` | Steady-state requests/sec cap across all routes | `20` |
+| `api_throttle_burst_limit` | Max burst of concurrent requests | `40` |
 
 ## Outputs
 
 `products_table_name`, `categories_table_name`, `images_bucket_name`,
 `cdn_base_url`, `lambda_function_name`, `api_url`, `github_deploy_role_arn`.
+
+## API protection
+
+The API Gateway stage has **rate limiting** (`default_route_settings` throttling),
+not an authorizer. This is deliberate:
+
+- The catalog endpoints (`GET /products`, `/categories`) are a **public
+  storefront** — product listings are meant to be readable by anyone, so there
+  is nothing to authenticate. Adding auth here would gate data that should be
+  open.
+- The real risk on a public read API is **abuse / runaway cost** (scraping,
+  hammering), which **throttling** addresses directly by capping requests/sec and
+  burst. That's the right tool for this threat, and it's cheap.
+- **Authentication is deferred until there's something to protect** — i.e. when
+  we add write/admin endpoints (creating products, the presigned image upload) or
+  user features (cart, orders). At that point we attach a **Cognito JWT
+  authorizer** to *those routes only* (HTTP API supports this natively) and leave
+  the catalog reads public.
+
+So: throttling now (fits a public catalog), auth later (scoped to non-public
+routes), rather than bolting on user auth the app doesn't yet have.
 
 ## Notes
 

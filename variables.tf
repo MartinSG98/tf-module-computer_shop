@@ -15,3 +15,15 @@ variable "github_deploy_repos" {
   type        = list(string)
   default     = ["MartinSG98/computer-shop-backend"]
 }
+
+variable "api_throttle_rate_limit" {
+  description = "Steady-state requests-per-second cap across all API routes."
+  type        = number
+  default     = 20
+}
+
+variable "api_throttle_burst_limit" {
+  description = "Maximum burst of concurrent requests for the API."
+  type        = number
+  default     = 40
+}
