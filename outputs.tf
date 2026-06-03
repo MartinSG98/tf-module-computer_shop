@@ -22,3 +22,8 @@ output "lambda_function_name" {
   description = "Lambda function name (target for CI/CD update-function-code)."
   value       = aws_lambda_function.api.function_name
 }
+
+output "api_url" {
+  description = "Base invoke URL of the HTTP API."
+  value       = aws_apigatewayv2_stage.default.invoke_url
+}
