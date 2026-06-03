@@ -9,3 +9,9 @@ variable "project" {
   type        = string
   default     = "computer-shop"
 }
+
+variable "cors_allow_origins" {
+  description = "Comma-separated CORS origins for the API (e.g. https://shop.example.com). Empty falls back to the API's local-dev defaults."
+  type        = string
+  default     = ""
+}

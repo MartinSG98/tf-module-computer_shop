@@ -17,3 +17,8 @@ output "cdn_base_url" {
   description = "CloudFront base URL for product images (use as CDN_BASE_URL)."
   value       = "https://${aws_cloudfront_distribution.images.domain_name}"
 }
+
+output "lambda_function_name" {
+  description = "Lambda function name (target for CI/CD update-function-code)."
+  value       = aws_lambda_function.api.function_name
+}
