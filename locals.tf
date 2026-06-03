@@ -2,5 +2,6 @@ locals {
   lambda_function_name = "${var.project}-api"
 
   # OIDC subject claims: restrict each repo to its main branch.
-  github_subs = [for repo in var.github_deploy_repos : "repo:${repo}:ref:refs/heads/main"]
+  github_subs          = [for repo in var.github_deploy_repos : "repo:${repo}:ref:refs/heads/main"]
+  github_frontend_subs = [for repo in var.github_frontend_repos : "repo:${repo}:ref:refs/heads/main"]
 }

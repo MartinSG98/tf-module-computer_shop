@@ -23,6 +23,16 @@ output "frontend_url" {
   value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
 }
 
+output "frontend_distribution_id" {
+  description = "CloudFront distribution ID for the frontend (for cache invalidation)."
+  value       = aws_cloudfront_distribution.frontend.id
+}
+
+output "github_frontend_deploy_role_arn" {
+  description = "IAM role ARN for the frontend GitHub Actions to assume via OIDC."
+  value       = aws_iam_role.github_frontend_deploy.arn
+}
+
 output "cdn_base_url" {
   description = "CloudFront base URL for product images (use as CDN_BASE_URL)."
   value       = "https://${aws_cloudfront_distribution.images.domain_name}"
