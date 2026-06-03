@@ -10,6 +10,8 @@ provider (region, tags) and state, then calls this module.
 
 - **DynamoDB** — `products` and `categories` tables (free-tier provisioned 5/5).
 - **S3 + CloudFront** — private images bucket served via CloudFront (OAC).
+- **Frontend hosting** — private S3 bucket + a separate CloudFront distribution
+  for the SPA (default root `index.html`, 403/404 → `index.html` for routing).
 - **Lambda** — function shell (placeholder code; CI/CD owns deploys).
 - **API Gateway (HTTP API)** — proxies all requests to the Lambda.
 - **GitHub OIDC** — provider + keyless deploy role.
@@ -43,7 +45,8 @@ module "computer_shop" {
 ## Outputs
 
 `products_table_name`, `categories_table_name`, `images_bucket_name`,
-`cdn_base_url`, `lambda_function_name`, `api_url`, `github_deploy_role_arn`.
+`cdn_base_url`, `frontend_bucket_name`, `frontend_url`, `lambda_function_name`,
+`api_url`, `github_deploy_role_arn`.
 
 ## API protection
 

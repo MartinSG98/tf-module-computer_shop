@@ -13,6 +13,16 @@ output "images_bucket_name" {
   value       = aws_s3_bucket.images.bucket
 }
 
+output "frontend_bucket_name" {
+  description = "Name of the S3 bucket hosting the frontend SPA."
+  value       = aws_s3_bucket.frontend.bucket
+}
+
+output "frontend_url" {
+  description = "CloudFront URL of the frontend app."
+  value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
+}
+
 output "cdn_base_url" {
   description = "CloudFront base URL for product images (use as CDN_BASE_URL)."
   value       = "https://${aws_cloudfront_distribution.images.domain_name}"
