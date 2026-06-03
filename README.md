@@ -1,38 +1,49 @@
 # tf-module-computer_shop
 
-Terraform for the Computer Shop backend infrastructure on AWS (eu-west-2).
+Reusable Terraform **module** for the Computer Shop backend infrastructure on AWS.
 
-## What it provisions
+This module declares resources only — it does **not** configure a provider or a
+backend. A root **stack** (see `tf-stack-computer_shop`) configures the AWS
+provider (region, tags) and state, then calls this module.
+
+## Resources
 
 - **DynamoDB** — `products` and `categories` tables (free-tier provisioned 5/5).
-- **S3 + CloudFront** — private bucket for product images, served via CloudFront.
-- **Lambda** — the FastAPI app (Mangum handler), packaged with Linux wheels.
-- **API Gateway (HTTP API)** — public endpoint that proxies to the Lambda.
-- **GitHub OIDC** — an IAM role GitHub Actions assumes to deploy (no static keys).
-
-## Status
-
-Scaffold only — provider, variables, and conventions. Resources are added in
-later steps.
-
-## Prerequisites
-
-- Terraform >= 1.5
-- AWS credentials for the **initial** apply (bootstrap). After that, CI deploys
-  via the GitHub OIDC role.
+- **S3 + CloudFront** — private images bucket served via CloudFront (OAC).
+- **Lambda** — function shell (placeholder code; CI/CD owns deploys).
+- **API Gateway (HTTP API)** — proxies all requests to the Lambda.
+- **GitHub OIDC** — provider + keyless deploy role.
 
 ## Usage
 
-```bash
-terraform init
-terraform plan
-terraform apply
+```hcl
+provider "aws" {
+  region = "eu-west-2"
+}
+
+module "computer_shop" {
+  source = "git::https://github.com/MartinSG98/tf-module-computer_shop.git?ref=v0.1.0"
+
+  project             = "computer-shop"
+  cors_allow_origins  = "https://shop.example.com"
+  github_deploy_repos = ["MartinSG98/computer-shop-backend"]
+}
 ```
 
-State is **local** (`terraform.tfstate`, gitignored) for now.
+## Inputs
 
-## Conventions
+| Name | Description | Default |
+| --- | --- | --- |
+| `project` | Name prefix for resources and tags | `computer-shop` |
+| `cors_allow_origins` | Comma-separated CORS origins for the API | `""` |
+| `github_deploy_repos` | Repos (owner/name) allowed to assume the deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
 
-- Region and a `project` name prefix come from `variables.tf`.
-- All resources are tagged via the provider's `default_tags` (`Project`,
-  `ManagedBy`).
+## Outputs
+
+`products_table_name`, `categories_table_name`, `images_bucket_name`,
+`cdn_base_url`, `lambda_function_name`, `api_url`, `github_deploy_role_arn`.
+
+## Notes
+
+- Region comes from the **provider** configured by the caller, not a variable.
+- Only one GitHub OIDC provider per account per URL — import an existing one.

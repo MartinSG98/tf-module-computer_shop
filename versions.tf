@@ -15,7 +15,4 @@ terraform {
       version = "~> 4.0"
     }
   }
-
-  # State is local for now (default backend). Migrate to an S3 backend with a
-  # lock table when this becomes a shared/CI-managed deployment.
 }
