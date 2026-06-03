@@ -77,3 +77,11 @@ routes), rather than bolting on user auth the app doesn't yet have.
 
 - Region comes from the **provider** configured by the caller, not a variable.
 - Only one GitHub OIDC provider per account per URL — import an existing one.
+
+## Related
+
+Part of the Computer Shop project:
+
+- [computer-shop-backend](https://github.com/MartinSG98/computer-shop-backend) — FastAPI backend API
+- [computer_shop_ui](https://github.com/MartinSG98/computer_shop_ui) — React/Vite/Mantine frontend
+- [tf-stack-computer_shop](https://github.com/MartinSG98/tf-stack-computer_shop) — Terraform deployment stack
