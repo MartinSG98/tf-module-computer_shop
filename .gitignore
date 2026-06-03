@@ -1,0 +1,23 @@
+# Local state and crash logs
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# Provider plugins and other local terraform dirs
+.terraform/
+.terraform.tfstate.lock.info
+
+# Variable files (may hold environment-specific values); commit *.example instead
+*.tfvars
+*.tfvars.json
+
+# CLI config that may contain credentials
+.terraformrc
+terraform.rc
+
+# Lambda build artifacts (generated during packaging)
+build/
+*.zip
+
+# Note: .terraform.lock.hcl IS committed (provider version lock) — not ignored.
