@@ -15,3 +15,9 @@ variable "cors_allow_origins" {
   type        = string
   default     = ""
 }
+
+variable "github_deploy_repos" {
+  description = "GitHub repos (owner/name) whose main branch may assume the deploy role via OIDC."
+  type        = list(string)
+  default     = ["MartinSG98/computer-shop-backend"]
+}

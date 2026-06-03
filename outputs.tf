@@ -27,3 +27,8 @@ output "api_url" {
   description = "Base invoke URL of the HTTP API."
   value       = aws_apigatewayv2_stage.default.invoke_url
 }
+
+output "github_deploy_role_arn" {
+  description = "IAM role ARN for GitHub Actions to assume via OIDC (configure as a CI secret/var)."
+  value       = aws_iam_role.github_deploy.arn
+}
