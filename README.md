@@ -25,11 +25,12 @@ provider "aws" {
 }
 
 module "computer_shop" {
-  source = "git::https://github.com/MartinSG98/tf-module-computer_shop.git?ref=v0.1.0"
+  source = "git::https://github.com/MartinSG98/tf-module-computer_shop.git?ref=v0.0.1"
 
-  project             = "computer-shop"
-  cors_allow_origins  = "https://shop.example.com"
-  github_deploy_repos = ["MartinSG98/computer-shop-backend"]
+  project               = "computer-shop"
+  github_deploy_repos   = ["MartinSG98/computer-shop-backend"]
+  github_frontend_repos = ["MartinSG98/computer_shop_ui"]
+  # cors_allow_origins = "https://shop.example.com"  # extra; frontend URL is always allowed
 }
 ```
 
@@ -38,8 +39,9 @@ module "computer_shop" {
 | Name | Description | Default |
 | --- | --- | --- |
 | `project` | Name prefix for resources and tags | `computer-shop` |
-| `cors_allow_origins` | Comma-separated CORS origins for the API | `""` |
-| `github_deploy_repos` | Repos (owner/name) allowed to assume the deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
+| `cors_allow_origins` | _Extra_ CORS origins beyond the frontend CloudFront URL (always allowed) | `""` |
+| `github_deploy_repos` | Repos (owner/name) allowed to assume the **backend** deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
+| `github_frontend_repos` | Repos (owner/name) allowed to assume the **frontend** deploy role (main branch) | `["MartinSG98/computer_shop_ui"]` |
 | `api_throttle_rate_limit` | Steady-state requests/sec cap across all routes | `20` |
 | `api_throttle_burst_limit` | Max burst of concurrent requests | `40` |
 
