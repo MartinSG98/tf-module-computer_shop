@@ -80,7 +80,7 @@ resource "aws_lambda_function" "api" {
       PRODUCTS_TABLE     = aws_dynamodb_table.products.name
       CATEGORIES_TABLE   = aws_dynamodb_table.categories.name
       CDN_BASE_URL       = "https://${aws_cloudfront_distribution.images.domain_name}"
-      CORS_ALLOW_ORIGINS = var.cors_allow_origins
+      CORS_ALLOW_ORIGINS = local.api_cors_origins
     }
   }
 
