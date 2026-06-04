@@ -22,6 +22,24 @@ variable "github_frontend_repos" {
   default     = ["MartinSG98/computer_shop_ui"]
 }
 
+variable "api_domain_name" {
+  description = "Custom domain for the API, e.g. api.msg-computers.com. Leave empty to use only the default API Gateway invoke URL."
+  type        = string
+  default     = ""
+}
+
+variable "site_domain_name" {
+  description = "Custom domain for the frontend site, e.g. msg-computers.com. Leave empty to use only the default CloudFront URL."
+  type        = string
+  default     = ""
+}
+
+variable "hosted_zone_name" {
+  description = "Route 53 public hosted zone the custom domains live in, e.g. msg-computers.com. Required when api_domain_name or site_domain_name is set."
+  type        = string
+  default     = ""
+}
+
 variable "api_throttle_rate_limit" {
   description = "Steady-state requests-per-second cap across all API routes."
   type        = number

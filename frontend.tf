@@ -34,6 +34,9 @@ resource "aws_cloudfront_distribution" "frontend" {
   comment             = "${var.project} frontend"
   default_root_object = "index.html"
 
+  # Serve the custom domain too, when configured.
+  aliases = local.site_domain_enabled ? [var.site_domain_name] : null
+
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
     origin_id                = "s3-frontend"
@@ -71,8 +74,21 @@ resource "aws_cloudfront_distribution" "frontend" {
     }
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
+  # Default CloudFront cert when no custom domain; ACM cert (us-east-1) when set.
+  dynamic "viewer_certificate" {
+    for_each = local.site_domain_enabled ? [] : [1]
+    content {
+      cloudfront_default_certificate = true
+    }
+  }
+
+  dynamic "viewer_certificate" {
+    for_each = local.site_domain_enabled ? [1] : []
+    content {
+      acm_certificate_arn      = aws_acm_certificate_validation.site[0].certificate_arn
+      ssl_support_method       = "sni-only"
+      minimum_protocol_version = "TLSv1.2_2021"
+    }
   }
 }
 

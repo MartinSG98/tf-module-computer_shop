@@ -16,6 +16,8 @@ provider (region, tags) and state, then calls this module.
 - **API Gateway (HTTP API)** — proxies all requests to the Lambda.
 - **GitHub OIDC** — provider + keyless deploy roles (backend: Lambda code;
   frontend: S3 sync + CloudFront invalidation).
+- **Custom domains (optional)** — ACM certs, DNS validation, and Route 53 alias
+  records for a custom API domain and/or site domain. Off unless configured.
 
 ## Usage
 
@@ -24,15 +26,34 @@ provider "aws" {
   region = "eu-west-2"
 }
 
+# Required: CloudFront (site) ACM certificates must live in us-east-1.
+provider "aws" {
+  alias  = "us_east_1"
+  region = "us-east-1"
+}
+
 module "computer_shop" {
   source = "git::https://github.com/MartinSG98/tf-module-computer_shop.git?ref=v0.0.1"
+
+  providers = {
+    aws           = aws
+    aws.us_east_1 = aws.us_east_1
+  }
 
   project               = "computer-shop"
   github_deploy_repos   = ["MartinSG98/computer-shop-backend"]
   github_frontend_repos = ["MartinSG98/computer_shop_ui"]
   # cors_allow_origins = "https://shop.example.com"  # extra; frontend URL is always allowed
+
+  # Optional custom domains (see "Custom domains" below):
+  # api_domain_name  = "api.msg-computers.com"
+  # site_domain_name = "msg-computers.com"
+  # hosted_zone_name = "msg-computers.com"
 }
 ```
+
+The `aws.us_east_1` aliased provider is **always required** (it's a
+`configuration_alias`), even when no custom domain is set.
 
 ## Inputs
 
@@ -42,6 +63,9 @@ module "computer_shop" {
 | `cors_allow_origins` | _Extra_ CORS origins beyond the frontend CloudFront URL (always allowed) | `""` |
 | `github_deploy_repos` | Repos (owner/name) allowed to assume the **backend** deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
 | `github_frontend_repos` | Repos (owner/name) allowed to assume the **frontend** deploy role (main branch) | `["MartinSG98/computer_shop_ui"]` |
+| `api_domain_name` | Custom domain for the API, e.g. `api.msg-computers.com`. Empty = default invoke URL only | `""` |
+| `site_domain_name` | Custom domain for the site, e.g. `msg-computers.com`. Empty = default CloudFront URL only | `""` |
+| `hosted_zone_name` | Route 53 public hosted zone the custom domains live in. Required when either domain is set | `""` |
 | `api_throttle_rate_limit` | Steady-state requests/sec cap across all routes | `20` |
 | `api_throttle_burst_limit` | Max burst of concurrent requests | `40` |
 
@@ -50,7 +74,37 @@ module "computer_shop" {
 `products_table_name`, `categories_table_name`, `images_bucket_name`,
 `cdn_base_url`, `frontend_bucket_name`, `frontend_url`,
 `frontend_distribution_id`, `lambda_function_name`, `api_url`,
+`api_custom_domain_url`, `site_custom_domain_url`,
 `github_deploy_role_arn`, `github_frontend_deploy_role_arn`.
+
+(`api_custom_domain_url` / `site_custom_domain_url` are `null` when the
+corresponding domain isn't configured.)
+
+## Custom domains
+
+Both are **opt-in** and independent — set `api_domain_name` and/or
+`site_domain_name` (plus `hosted_zone_name`) to enable. With them empty the
+module is a no-op and the stack keeps using the default `*.execute-api` /
+`*.cloudfront.net` URLs.
+
+When enabled, the module creates:
+
+- An **ACM certificate** per domain with **DNS validation**. The API cert is
+  regional (the stack's region, e.g. `eu-west-2`); the site cert is created in
+  **us-east-1** via the `aws.us_east_1` provider, because CloudFront requires it.
+- **Route 53 records** in the looked-up hosted zone: the cert-validation
+  records, an `A` alias for the API → API Gateway, and `A`/`AAAA` aliases for the
+  site apex → CloudFront. Alias queries to AWS targets are free.
+- The API custom domain + base-path mapping to the `$default` stage, and the
+  site domain attached to the frontend CloudFront distribution (alias + cert).
+
+The site's `https://` origin is **added to the API's CORS allow-list
+automatically** when `site_domain_name` is set — no need to also list it in
+`cors_allow_origins`.
+
+The **hosted zone is looked up, not created** (`data "aws_route53_zone"`).
+Register the domain first (Route 53 → Registered domains, which auto-creates the
+zone) — Terraform can't register domains.
 
 ## API protection
 
@@ -76,6 +130,8 @@ routes), rather than bolting on user auth the app doesn't yet have.
 ## Notes
 
 - Region comes from the **provider** configured by the caller, not a variable.
+- The `aws.us_east_1` provider is a required `configuration_alias` (for the
+  CloudFront site cert) — callers must always pass it, even with no custom domain.
 - Only one GitHub OIDC provider per account per URL — import an existing one.
 
 ## Related
