@@ -23,6 +23,11 @@ output "frontend_url" {
   value       = "https://${aws_cloudfront_distribution.frontend.domain_name}"
 }
 
+output "site_custom_domain_url" {
+  description = "Custom domain URL of the site (null if no custom domain is configured)."
+  value       = local.site_domain_enabled ? "https://${var.site_domain_name}" : null
+}
+
 output "frontend_distribution_id" {
   description = "CloudFront distribution ID for the frontend (for cache invalidation)."
   value       = aws_cloudfront_distribution.frontend.id
@@ -46,6 +51,11 @@ output "lambda_function_name" {
 output "api_url" {
   description = "Base invoke URL of the HTTP API."
   value       = aws_apigatewayv2_stage.default.invoke_url
+}
+
+output "api_custom_domain_url" {
+  description = "Custom domain URL of the API (null if no custom domain is configured)."
+  value       = local.api_domain_enabled ? "https://${var.api_domain_name}" : null
 }
 
 output "github_deploy_role_arn" {
