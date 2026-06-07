@@ -18,9 +18,12 @@ locals {
   # custom domain (when configured), plus any extra origins from the variable.
   frontend_origin = "https://${aws_cloudfront_distribution.frontend.domain_name}"
   site_origin     = local.site_domain_enabled ? "https://${var.site_domain_name}" : ""
+  # The site is served on www too, so its origin must be allowed by the API CORS.
+  site_www_origin = local.site_domain_enabled ? "https://www.${var.site_domain_name}" : ""
   api_cors_origins = join(",", compact([
     local.frontend_origin,
     local.site_origin,
+    local.site_www_origin,
     var.cors_allow_origins,
   ]))
 }

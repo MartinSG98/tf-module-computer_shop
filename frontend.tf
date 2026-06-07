@@ -34,8 +34,8 @@ resource "aws_cloudfront_distribution" "frontend" {
   comment             = "${var.project} frontend"
   default_root_object = "index.html"
 
-  # Serve the custom domain too, when configured.
-  aliases = local.site_domain_enabled ? [var.site_domain_name] : null
+  # Serve the custom domain (apex + www) too, when configured.
+  aliases = local.site_domain_enabled ? [var.site_domain_name, "www.${var.site_domain_name}"] : null
 
   origin {
     domain_name              = aws_s3_bucket.frontend.bucket_regional_domain_name
