@@ -58,8 +58,10 @@ resource "aws_cloudwatch_log_group" "eval" {
 resource "aws_lambda_function" "eval" {
   function_name = local.eval_function_name
   role          = aws_iam_role.eval_exec.arn
-  runtime       = "python3.11"
-  handler       = "app.handler.handler"
+  # python3.12 runs on Amazon Linux 2023 (newer glibc), which the onnxruntime/
+  # numpy wheels require. The API Lambda stays 3.11 (no native deps).
+  runtime = "python3.12"
+  handler = "app.handler.handler"
   timeout       = 30
   memory_size   = 1024
 
