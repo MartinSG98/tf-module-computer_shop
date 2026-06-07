@@ -49,6 +49,21 @@ resource "aws_iam_role_policy" "eval_model_read" {
   policy = data.aws_iam_policy_document.eval_model_read.json
 }
 
+# Invoke the Bedrock model used for build suggestions (scoped to that one model).
+data "aws_iam_policy_document" "eval_bedrock" {
+  statement {
+    effect    = "Allow"
+    actions   = ["bedrock:InvokeModel"]
+    resources = ["arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/${var.eval_suggest_model_id}"]
+  }
+}
+
+resource "aws_iam_role_policy" "eval_bedrock" {
+  name   = "${var.project}-eval-bedrock"
+  role   = aws_iam_role.eval_exec.id
+  policy = data.aws_iam_policy_document.eval_bedrock.json
+}
+
 # --- Function ---
 resource "aws_cloudwatch_log_group" "eval" {
   name              = "/aws/lambda/${local.eval_function_name}"
@@ -71,9 +86,10 @@ resource "aws_lambda_function" "eval" {
 
   environment {
     variables = {
-      MODEL_BUCKET   = aws_s3_bucket.models.bucket
-      MODEL_KEY      = local.eval_model_key
-      ALLOWED_ORIGIN = var.eval_allowed_origin
+      MODEL_BUCKET     = aws_s3_bucket.models.bucket
+      MODEL_KEY        = local.eval_model_key
+      ALLOWED_ORIGIN   = var.eval_allowed_origin
+      SUGGEST_MODEL_ID = var.eval_suggest_model_id
     }
   }
 
