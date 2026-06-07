@@ -4,10 +4,11 @@
 
 # CloudFront certificates MUST live in us-east-1, regardless of stack region.
 resource "aws_acm_certificate" "site" {
-  count             = local.site_domain_enabled ? 1 : 0
-  provider          = aws.us_east_1
-  domain_name       = var.site_domain_name
-  validation_method = "DNS"
+  count                     = local.site_domain_enabled ? 1 : 0
+  provider                  = aws.us_east_1
+  domain_name               = var.site_domain_name
+  subject_alternative_names = ["www.${var.site_domain_name}"]
+  validation_method         = "DNS"
 
   lifecycle {
     create_before_destroy = true
@@ -56,6 +57,33 @@ resource "aws_route53_record" "site_aaaa" {
   count   = local.site_domain_enabled ? 1 : 0
   zone_id = data.aws_route53_zone.this[0].zone_id
   name    = var.site_domain_name
+  type    = "AAAA"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+# Also serve the site on the www subdomain (same distribution + cert SAN).
+resource "aws_route53_record" "site_www_a" {
+  count   = local.site_domain_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.this[0].zone_id
+  name    = "www.${var.site_domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = aws_cloudfront_distribution.frontend.domain_name
+    zone_id                = aws_cloudfront_distribution.frontend.hosted_zone_id
+    evaluate_target_health = false
+  }
+}
+
+resource "aws_route53_record" "site_www_aaaa" {
+  count   = local.site_domain_enabled ? 1 : 0
+  zone_id = data.aws_route53_zone.this[0].zone_id
+  name    = "www.${var.site_domain_name}"
   type    = "AAAA"
 
   alias {

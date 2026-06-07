@@ -102,15 +102,18 @@ When enabled, the module creates:
 - An **ACM certificate** per domain with **DNS validation**. The API cert is
   regional (the stack's region, e.g. `eu-west-2`); the site cert is created in
   **us-east-1** via the `aws.us_east_1` provider, because CloudFront requires it.
+  The site cert covers both the apex and `www` (the latter as a SAN on the same
+  cert, so there is no second certificate).
 - **Route 53 records** in the looked-up hosted zone: the cert-validation
-  records, an `A` alias for the API → API Gateway, and `A`/`AAAA` aliases for the
-  site apex → CloudFront. Alias queries to AWS targets are free.
+  records, an `A` alias for the API → API Gateway, and `A`/`AAAA` aliases for both
+  the site apex and `www` → CloudFront. Alias queries to AWS targets are free.
 - The API custom domain + base-path mapping to the `$default` stage, and the
-  site domain attached to the frontend CloudFront distribution (alias + cert).
+  site domain (apex + `www`) attached to the frontend CloudFront distribution
+  (aliases + cert). Both serve the site; there is no www-to-apex redirect.
 
-The site's `https://` origin is **added to the API's CORS allow-list
-automatically** when `site_domain_name` is set — no need to also list it in
-`cors_allow_origins`.
+The site's `https://` origins (apex and `www`) are **added to the API's CORS
+allow-list automatically** when `site_domain_name` is set — no need to also list
+them in `cors_allow_origins`.
 
 The **hosted zone is looked up, not created** (`data "aws_route53_zone"`).
 Register the domain first (Route 53 → Registered domains, which auto-creates the
