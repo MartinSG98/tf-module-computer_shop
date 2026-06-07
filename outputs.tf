@@ -62,3 +62,28 @@ output "github_deploy_role_arn" {
   description = "IAM role ARN for GitHub Actions to assume via OIDC (configure as a CI secret/var)."
   value       = aws_iam_role.github_deploy.arn
 }
+
+output "eval_lambda_function_name" {
+  description = "Build-evaluator Lambda name (target for the eval repo's update-function-code)."
+  value       = aws_lambda_function.eval.function_name
+}
+
+output "models_bucket_name" {
+  description = "S3 bucket holding the evaluator model (upload model.onnx to the build-eval/ prefix)."
+  value       = aws_s3_bucket.models.bucket
+}
+
+output "eval_model_key" {
+  description = "S3 key the evaluator Lambda loads the model from."
+  value       = local.eval_model_key
+}
+
+output "github_eval_deploy_role_arn" {
+  description = "IAM role ARN for the build-evaluator CI to assume via OIDC."
+  value       = aws_iam_role.github_eval_deploy.arn
+}
+
+output "eval_url" {
+  description = "Build-evaluator endpoint (POST)."
+  value       = "${aws_apigatewayv2_stage.default.invoke_url}evaluate"
+}

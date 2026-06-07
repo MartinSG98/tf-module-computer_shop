@@ -1,5 +1,7 @@
 locals {
   lambda_function_name = "${var.project}-api"
+  eval_function_name   = "${var.project}-build-eval"
+  eval_model_key       = "build-eval/model.onnx"
 
   # Custom domains are opt-in: each is only wired up when its name is supplied.
   api_domain_enabled  = var.api_domain_name != ""
@@ -10,6 +12,7 @@ locals {
   # OIDC subject claims: restrict each repo to its main branch.
   github_subs          = [for repo in var.github_deploy_repos : "repo:${repo}:ref:refs/heads/main"]
   github_frontend_subs = [for repo in var.github_frontend_repos : "repo:${repo}:ref:refs/heads/main"]
+  github_eval_subs     = [for repo in var.github_eval_repos : "repo:${repo}:ref:refs/heads/main"]
 
   # API CORS: always allow the hosted frontend's CloudFront URL, the site's
   # custom domain (when configured), plus any extra origins from the variable.
