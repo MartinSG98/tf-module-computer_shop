@@ -39,10 +39,12 @@ data "aws_iam_policy_document" "github_eval_deploy" {
     actions   = ["lambda:UpdateFunctionCode", "lambda:GetFunction"]
     resources = [aws_lambda_function.eval.arn]
   }
+  # Upload the model and the (S3-deployed) code zip; GetObject is needed because
+  # update-function-code --s3-bucket reads the package back.
   statement {
-    sid       = "UploadModel"
+    sid       = "ModelAndCodeArtifacts"
     effect    = "Allow"
-    actions   = ["s3:PutObject"]
+    actions   = ["s3:PutObject", "s3:GetObject"]
     resources = ["${aws_s3_bucket.models.arn}/*"]
   }
 }
