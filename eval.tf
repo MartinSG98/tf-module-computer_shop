@@ -60,10 +60,10 @@ resource "aws_lambda_function" "eval" {
   role          = aws_iam_role.eval_exec.arn
   # python3.12 runs on Amazon Linux 2023 (newer glibc), which the onnxruntime/
   # numpy wheels require. The API Lambda stays 3.11 (no native deps).
-  runtime = "python3.12"
-  handler = "app.handler.handler"
-  timeout       = 30
-  memory_size   = 1024
+  runtime     = "python3.12"
+  handler     = "app.handler.handler"
+  timeout     = 30
+  memory_size = 1024
 
   # Placeholder until the eval repo CI pushes the real (onnxruntime) package.
   filename         = data.archive_file.placeholder.output_path
