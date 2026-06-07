@@ -34,6 +34,12 @@ variable "eval_allowed_origin" {
   default     = "*"
 }
 
+variable "eval_suggest_model_id" {
+  description = "Bedrock model id the evaluator Lambda invokes for build suggestions. Must be available (on-demand) in this region."
+  type        = string
+  default     = "amazon.nova-lite-v1:0"
+}
+
 variable "api_domain_name" {
   description = "Custom domain for the API, e.g. api.msg-computers.com. Leave empty to use only the default API Gateway invoke URL."
   type        = string

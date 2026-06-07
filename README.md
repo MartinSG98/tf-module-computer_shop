@@ -14,8 +14,13 @@ provider (region, tags) and state, then calls this module.
   for the SPA (default root `index.html`, 403/404 → `index.html` for routing).
 - **Lambda** — function shell (placeholder code; CI/CD owns deploys).
 - **API Gateway (HTTP API)** — proxies all requests to the Lambda.
+- **Build evaluator** — a dedicated Lambda (its own role, on `POST /evaluate`)
+  that scores a PC build, with a versioned S3 bucket for the ONNX model. Its role
+  can read the model from S3 and call one **Amazon Bedrock** model for build
+  suggestions (`bedrock:InvokeModel`, scoped to `eval_suggest_model_id`).
 - **GitHub OIDC** — provider + keyless deploy roles (backend: Lambda code;
-  frontend: S3 sync + CloudFront invalidation).
+  frontend: S3 sync + CloudFront invalidation; build evaluator: Lambda code +
+  model upload).
 - **Custom domains (optional)** — ACM certs, DNS validation, and Route 53 alias
   records for a custom API domain and/or site domain. Off unless configured.
 
@@ -63,6 +68,9 @@ The `aws.us_east_1` aliased provider is **always required** (it's a
 | `cors_allow_origins` | _Extra_ CORS origins beyond the frontend CloudFront URL (always allowed) | `""` |
 | `github_deploy_repos` | Repos (owner/name) allowed to assume the **backend** deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
 | `github_frontend_repos` | Repos (owner/name) allowed to assume the **frontend** deploy role (main branch) | `["MartinSG98/computer_shop_ui"]` |
+| `github_eval_repos` | Repos (owner/name) allowed to assume the **build-evaluator** deploy role (main branch) | `["MartinSG98/computer-shop-build-eval"]` |
+| `eval_allowed_origin` | `Access-Control-Allow-Origin` returned by the evaluator Lambda | `"*"` |
+| `eval_suggest_model_id` | Bedrock model id the evaluator invokes for build suggestions (must be available on-demand in the region) | `"amazon.nova-lite-v1:0"` |
 | `api_domain_name` | Custom domain for the API, e.g. `api.msg-computers.com`. Empty = default invoke URL only | `""` |
 | `site_domain_name` | Custom domain for the site, e.g. `msg-computers.com`. Empty = default CloudFront URL only | `""` |
 | `hosted_zone_name` | Route 53 public hosted zone the custom domains live in. Required when either domain is set | `""` |
@@ -75,7 +83,9 @@ The `aws.us_east_1` aliased provider is **always required** (it's a
 `cdn_base_url`, `frontend_bucket_name`, `frontend_url`,
 `frontend_distribution_id`, `lambda_function_name`, `api_url`,
 `api_custom_domain_url`, `site_custom_domain_url`,
-`github_deploy_role_arn`, `github_frontend_deploy_role_arn`.
+`github_deploy_role_arn`, `github_frontend_deploy_role_arn`,
+`eval_lambda_function_name`, `models_bucket_name`, `eval_model_key`,
+`eval_url`, `github_eval_deploy_role_arn`.
 
 (`api_custom_domain_url` / `site_custom_domain_url` are `null` when the
 corresponding domain isn't configured.)
@@ -140,4 +150,5 @@ Part of the Computer Shop project:
 
 - [computer-shop-backend](https://github.com/MartinSG98/computer-shop-backend) — FastAPI backend API
 - [computer_shop_ui](https://github.com/MartinSG98/computer_shop_ui) — React/Vite/Mantine frontend
+- [computer-shop-build-eval](https://github.com/MartinSG98/computer-shop-build-eval) — PC build scorer + suggestions (eval Lambda)
 - [tf-stack-computer_shop](https://github.com/MartinSG98/tf-stack-computer_shop) — Terraform deployment stack
