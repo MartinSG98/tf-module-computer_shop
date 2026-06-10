@@ -44,6 +44,25 @@ resource "aws_iam_role_policy" "lambda_dynamodb" {
   policy = data.aws_iam_policy_document.lambda_dynamodb.json
 }
 
+# Invoke the support agent (chat route proxies to AgentCore). The /* covers
+# the runtime's endpoint/version sub-resources that invocations resolve to.
+data "aws_iam_policy_document" "lambda_agent_invoke" {
+  statement {
+    effect  = "Allow"
+    actions = ["bedrock-agentcore:InvokeAgentRuntime"]
+    resources = [
+      aws_bedrockagentcore_agent_runtime.support_agent.agent_runtime_arn,
+      "${aws_bedrockagentcore_agent_runtime.support_agent.agent_runtime_arn}/*",
+    ]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_agent_invoke" {
+  name   = "${var.project}-lambda-agent-invoke"
+  role   = aws_iam_role.lambda_exec.id
+  policy = data.aws_iam_policy_document.lambda_agent_invoke.json
+}
+
 # --- Function -----------------------------------------------------------------
 
 # Log group owned by Terraform so retention is set (Lambda would otherwise
@@ -69,8 +88,10 @@ resource "aws_lambda_function" "api" {
   role          = aws_iam_role.lambda_exec.arn
   runtime       = "python3.11"
   handler       = "app.lambda_handler.handler"
-  timeout       = 15
-  memory_size   = 512
+  # 30s matches the API Gateway integration cap; the chat route blocks on the
+  # support agent, whose cold first message can exceed the old 15s.
+  timeout     = 30
+  memory_size = 512
 
   filename         = data.archive_file.placeholder.output_path
   source_code_hash = data.archive_file.placeholder.output_base64sha256
@@ -81,6 +102,7 @@ resource "aws_lambda_function" "api" {
       CATEGORIES_TABLE   = aws_dynamodb_table.categories.name
       CDN_BASE_URL       = "https://${aws_cloudfront_distribution.images.domain_name}"
       CORS_ALLOW_ORIGINS = local.api_cors_origins
+      AGENT_RUNTIME_ARN  = aws_bedrockagentcore_agent_runtime.support_agent.agent_runtime_arn
     }
   }
 
