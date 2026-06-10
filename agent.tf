@@ -40,8 +40,10 @@ resource "aws_s3_object" "agent_code" {
   source = data.archive_file.agent_placeholder.output_path
 
   lifecycle {
-    # Terraform owns the object's existence; CI owns its content.
-    ignore_changes = [source, etag, source_hash]
+    # Terraform owns the object's existence; CI owns its content. CI's
+    # `aws s3 cp` replaces the object (and drops tags), so content-adjacent
+    # attributes and tags are all CI's business, not drift.
+    ignore_changes = [source, etag, source_hash, tags, tags_all]
   }
 }
 
