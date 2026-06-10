@@ -28,6 +28,18 @@ variable "github_eval_repos" {
   default     = ["MartinSG98/computer-shop-build-eval"]
 }
 
+variable "github_agent_repos" {
+  description = "GitHub repos (owner/name) whose main branch may assume the support-agent deploy role via OIDC."
+  type        = list(string)
+  default     = ["MartinSG98/computer-shop-support-agent"]
+}
+
+variable "agent_model_id" {
+  description = "Bedrock model id the support agent invokes for chat. Must be available (on-demand) in this region."
+  type        = string
+  default     = "amazon.nova-lite-v1:0"
+}
+
 variable "eval_allowed_origin" {
   description = "Access-Control-Allow-Origin returned by the evaluator Lambda. '*' is fine for this public, no-auth scoring endpoint."
   type        = string

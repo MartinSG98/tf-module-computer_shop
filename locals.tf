@@ -3,6 +3,10 @@ locals {
   eval_function_name   = "${var.project}-build-eval"
   eval_model_key       = "build-eval/model.onnx"
 
+  # AgentCore runtime names allow [a-zA-Z0-9_] only, so hyphens become underscores.
+  agent_runtime_name = "${replace(var.project, "-", "_")}_support_agent"
+  agent_code_key     = "support-agent/agent.zip"
+
   # Custom domains are opt-in: each is only wired up when its name is supplied.
   api_domain_enabled  = var.api_domain_name != ""
   site_domain_enabled = var.site_domain_name != ""
@@ -13,6 +17,7 @@ locals {
   github_subs          = [for repo in var.github_deploy_repos : "repo:${repo}:ref:refs/heads/main"]
   github_frontend_subs = [for repo in var.github_frontend_repos : "repo:${repo}:ref:refs/heads/main"]
   github_eval_subs     = [for repo in var.github_eval_repos : "repo:${repo}:ref:refs/heads/main"]
+  github_agent_subs    = [for repo in var.github_agent_repos : "repo:${repo}:ref:refs/heads/main"]
 
   # API CORS: always allow the hosted frontend's CloudFront URL, the site's
   # custom domain (when configured), plus any extra origins from the variable.
