@@ -69,8 +69,10 @@ The `aws.us_east_1` aliased provider is **always required** (it's a
 | `github_deploy_repos` | Repos (owner/name) allowed to assume the **backend** deploy role (main branch) | `["MartinSG98/computer-shop-backend"]` |
 | `github_frontend_repos` | Repos (owner/name) allowed to assume the **frontend** deploy role (main branch) | `["MartinSG98/computer_shop_ui"]` |
 | `github_eval_repos` | Repos (owner/name) allowed to assume the **build-evaluator** deploy role (main branch) | `["MartinSG98/computer-shop-build-eval"]` |
+| `github_agent_repos` | Repos (owner/name) allowed to assume the **support-agent** deploy role (main branch) | `["MartinSG98/computer-shop-support-agent"]` |
 | `eval_allowed_origin` | `Access-Control-Allow-Origin` returned by the evaluator Lambda | `"*"` |
 | `eval_suggest_model_id` | Bedrock model id the evaluator invokes for build suggestions (must be available on-demand in the region) | `"amazon.nova-lite-v1:0"` |
+| `agent_model_id` | Bedrock model id the support agent invokes for chat (must be available on-demand in the region) | `"openai.gpt-oss-120b-1:0"` |
 | `api_domain_name` | Custom domain for the API, e.g. `api.msg-computers.com`. Empty = default invoke URL only | `""` |
 | `site_domain_name` | Custom domain for the site, e.g. `msg-computers.com`. Empty = default CloudFront URL only | `""` |
 | `hosted_zone_name` | Route 53 public hosted zone the custom domains live in. Required when either domain is set | `""` |
@@ -85,7 +87,9 @@ The `aws.us_east_1` aliased provider is **always required** (it's a
 `api_custom_domain_url`, `site_custom_domain_url`,
 `github_deploy_role_arn`, `github_frontend_deploy_role_arn`,
 `eval_lambda_function_name`, `models_bucket_name`, `eval_model_key`,
-`eval_url`, `github_eval_deploy_role_arn`.
+`eval_url`, `github_eval_deploy_role_arn`, `agent_runtime_arn`,
+`agent_runtime_id`, `agent_artifacts_bucket_name`, `agent_code_key`,
+`github_agent_deploy_role_arn`.
 
 (`api_custom_domain_url` / `site_custom_domain_url` are `null` when the
 corresponding domain isn't configured.)

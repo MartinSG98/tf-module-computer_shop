@@ -37,7 +37,7 @@ variable "github_agent_repos" {
 variable "agent_model_id" {
   description = "Bedrock model id the support agent invokes for chat. Must be available (on-demand) in this region."
   type        = string
-  default     = "amazon.nova-lite-v1:0"
+  default     = "openai.gpt-oss-120b-1:0"
 }
 
 variable "eval_allowed_origin" {

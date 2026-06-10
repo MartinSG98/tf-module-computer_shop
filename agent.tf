@@ -1,4 +1,4 @@
-# Support agent: a chat agent (Strands + Nova Lite) hosted on Bedrock AgentCore
+# Support agent: a chat agent (Strands) hosted on Bedrock AgentCore
 # Runtime using direct code deployment (zip in S3, no container). Terraform owns
 # the infrastructure; the agent repo's CI uploads the real code zip and refreshes
 # the runtime. Same placeholder pattern as the API/eval Lambdas.
@@ -185,7 +185,7 @@ resource "aws_iam_role_policy" "agent_runtime_basics" {
 resource "aws_bedrockagentcore_agent_runtime" "support_agent" {
   # Runtime names allow letters/digits/underscores only (no hyphens).
   agent_runtime_name = local.agent_runtime_name
-  description        = "Computer Shop customer support agent (Strands + Nova Lite, catalog-grounded)."
+  description        = "Computer Shop customer support agent (Strands, catalog-grounded)."
   role_arn           = aws_iam_role.agent_exec.arn
 
   agent_runtime_artifact {
