@@ -14,10 +14,40 @@ resource "aws_apigatewayv2_integration" "lambda" {
 }
 
 # Catch-all: every method/path proxies to the Lambda; FastAPI does the routing.
+# This route stays unauthenticated so the storefront (products, categories,
+# chat) remains public.
 resource "aws_apigatewayv2_route" "default" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "$default"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
+# Cognito JWT authorizer. Validates the bearer token's signature, issuer, and
+# audience (the app client id). It does NOT check group membership; the backend
+# reads cognito:groups to separate admins from normal users. The frontend must
+# send the ID token, since only it carries the `aud` claim this checks against.
+resource "aws_apigatewayv2_authorizer" "cognito" {
+  api_id           = aws_apigatewayv2_api.http.id
+  name             = "${var.project}-cognito-jwt"
+  authorizer_type  = "JWT"
+  identity_sources = ["$request.header.Authorization"]
+
+  jwt_configuration {
+    audience = [aws_cognito_user_pool_client.app.id]
+    issuer   = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${aws_cognito_user_pool.main.id}"
+  }
+}
+
+# Admin routes require a valid Cognito token. This more-specific route key takes
+# precedence over $default for /admin/* paths, so only the admin surface is
+# locked down while everything else stays open. Same Lambda integration:
+# FastAPI routes /admin/* internally and enforces the admins group there.
+resource "aws_apigatewayv2_route" "admin" {
+  api_id             = aws_apigatewayv2_api.http.id
+  route_key          = "ANY /admin/{proxy+}"
+  target             = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+  authorization_type = "JWT"
+  authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
 # $default stage means clean URLs with no stage path prefix.

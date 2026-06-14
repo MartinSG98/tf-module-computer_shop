@@ -112,3 +112,18 @@ output "eval_url" {
   description = "Build-evaluator endpoint (POST)."
   value       = "${aws_apigatewayv2_stage.default.invoke_url}evaluate"
 }
+
+output "cognito_user_pool_id" {
+  description = "Cognito user pool id (for the frontend auth config)."
+  value       = aws_cognito_user_pool.main.id
+}
+
+output "cognito_app_client_id" {
+  description = "Cognito app client id used by the frontend SPA (also the JWT audience)."
+  value       = aws_cognito_user_pool_client.app.id
+}
+
+output "cognito_region" {
+  description = "Region the Cognito user pool lives in (for the frontend auth config)."
+  value       = data.aws_region.current.name
+}
