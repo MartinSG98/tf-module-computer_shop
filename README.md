@@ -210,6 +210,18 @@ what we'd do instead with a real budget:
   CloudFront site cert) — callers must always pass it, even with no custom domain.
 - Only one GitHub OIDC provider per account per URL — import an existing one.
 
+## Releasing
+
+The module is consumed by tag (`?ref=vX.Y.Z`). Tagging is automated:
+
+1. In your PR, bump the `VERSION` file (e.g. `0.4.0`). Pick the bump deliberately
+   (minor for new resources/inputs, patch for fixes), since the stack pins to it.
+2. Merge to `main`. The `tag-release` workflow reads `VERSION` and pushes the
+   matching `v<VERSION>` tag (skipping if it already exists).
+3. Point the stack's `main.tf` `source` at the new tag and apply.
+
+The workflow only fires when `VERSION` changes, so ordinary merges don't tag.
+
 ## Related
 
 Part of the Computer Shop project:

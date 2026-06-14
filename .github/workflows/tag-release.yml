@@ -1,0 +1,56 @@
+name: Tag release on merge to main
+
+# Tags the repo as v<VERSION> whenever the VERSION file changes on main (i.e. a
+# merged PR bumped it). The stack pins the module by this tag, so the version is
+# chosen deliberately in the PR rather than auto-incremented. Re-runs are safe:
+# the tag is only created if it does not already exist.
+on:
+  push:
+    branches: [main]
+    paths: [VERSION]
+  workflow_dispatch:
+
+# Needs write access to push the tag back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-release
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history + tags so the existence check below sees prior tags.
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Read and validate version
+        id: ver
+        run: |
+          VERSION="$(tr -d '[:space:]' < VERSION)"
+          if [ -z "$VERSION" ]; then
+            echo "::error::VERSION file is empty"; exit 1
+          fi
+          # Guard against typos producing junk tags (expects X.Y.Z, optional -suffix).
+          if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$'; then
+            echo "::error::VERSION '$VERSION' is not semver (X.Y.Z)"; exit 1
+          fi
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag (skip if it already exists)
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            echo "Tag $TAG already exists; nothing to do."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+          echo "Created and pushed $TAG."
