@@ -21,7 +21,8 @@ resource "aws_iam_role_policy_attachment" "lambda_basic" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
-# Read-only access to exactly the two tables (least privilege).
+# Least privilege: read-only on the catalog tables, read + write on orders
+# (checkout writes, the admin dashboard reads).
 data "aws_iam_policy_document" "lambda_dynamodb" {
   statement {
     effect = "Allow"
@@ -35,6 +36,17 @@ data "aws_iam_policy_document" "lambda_dynamodb" {
       aws_dynamodb_table.products.arn,
       aws_dynamodb_table.categories.arn,
     ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "dynamodb:GetItem",
+      "dynamodb:Query",
+      "dynamodb:Scan",
+      "dynamodb:PutItem",
+    ]
+    resources = [aws_dynamodb_table.orders.arn]
   }
 }
 
@@ -100,6 +112,7 @@ resource "aws_lambda_function" "api" {
     variables = {
       PRODUCTS_TABLE     = aws_dynamodb_table.products.name
       CATEGORIES_TABLE   = aws_dynamodb_table.categories.name
+      ORDERS_TABLE       = aws_dynamodb_table.orders.name
       CDN_BASE_URL       = "https://${aws_cloudfront_distribution.images.domain_name}"
       CORS_ALLOW_ORIGINS = local.api_cors_origins
       AGENT_RUNTIME_ARN  = aws_bedrockagentcore_agent_runtime.support_agent.agent_runtime_arn

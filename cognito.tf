@@ -16,6 +16,12 @@
 resource "aws_cognito_user_pool" "main" {
   name = "${var.project}-users"
 
+  # Cheapest tier. Lite covers everything used here (app clients, groups,
+  # USER_PASSWORD_AUTH, JWTs); Essentials/Plus only add managed-login branding
+  # and threat protection, which we don't want. Pinned so the tier (and its
+  # pricing) is never picked for us.
+  user_pool_tier = "LITE"
+
   # Admin-create-only: no public sign-up. Terraform creates the demo users.
   admin_create_user_config {
     allow_admin_create_user_only = true
