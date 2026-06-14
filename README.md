@@ -8,12 +8,17 @@ provider (region, tags) and state, then calls this module.
 
 ## Resources
 
-- **DynamoDB** — `products` and `categories` tables (free-tier provisioned 5/5).
+- **DynamoDB** — `products`, `categories`, and `orders` tables (free-tier
+  provisioned 5/5 each; three tables = 15/15 of the 25/25 always-free budget).
 - **S3 + CloudFront** — private images bucket served via CloudFront (OAC).
 - **Frontend hosting** — private S3 bucket + a separate CloudFront distribution
   for the SPA (default root `index.html`, 403/404 → `index.html` for routing).
 - **Lambda** — function shell (placeholder code; CI/CD owns deploys).
-- **API Gateway (HTTP API)** — proxies all requests to the Lambda.
+- **API Gateway (HTTP API)** — proxies all requests to the Lambda. A Cognito
+  **JWT authorizer** is attached to the `ANY /admin/{proxy+}` route only;
+  everything else (the public catalog) stays open. See "Admin auth (Cognito)".
+- **Cognito** — a user pool (Lite tier, self-signup disabled) backing the admin
+  area, with an `admins` group and two demo accounts. See "Admin auth (Cognito)".
 - **Build evaluator** — a dedicated Lambda (its own role, on `POST /evaluate`)
   that scores a PC build, with a versioned S3 bucket for the ONNX model. Its role
   can read the model from S3 and call one **Amazon Bedrock** model for build
@@ -78,13 +83,16 @@ The `aws.us_east_1` aliased provider is **always required** (it's a
 | `hosted_zone_name` | Route 53 public hosted zone the custom domains live in. Required when either domain is set | `""` |
 | `api_throttle_rate_limit` | Steady-state requests/sec cap across all routes | `20` |
 | `api_throttle_burst_limit` | Max burst of concurrent requests | `40` |
+| `demo_normal_password` | Password for the demo `user-normal` account (sensitive) | `"DemoNormal123"` |
+| `demo_admin_password` | Password for the demo `user-admin` account, in the `admins` group (sensitive) | `"DemoAdmin123"` |
 
 ## Outputs
 
-`products_table_name`, `categories_table_name`, `images_bucket_name`,
-`cdn_base_url`, `frontend_bucket_name`, `frontend_url`,
+`products_table_name`, `categories_table_name`, `orders_table_name`,
+`images_bucket_name`, `cdn_base_url`, `frontend_bucket_name`, `frontend_url`,
 `frontend_distribution_id`, `lambda_function_name`, `api_url`,
 `api_custom_domain_url`, `site_custom_domain_url`,
+`cognito_user_pool_id`, `cognito_app_client_id`, `cognito_region`,
 `github_deploy_role_arn`, `github_frontend_deploy_role_arn`,
 `eval_lambda_function_name`, `models_bucket_name`, `eval_model_key`,
 `eval_url`, `github_eval_deploy_role_arn`, `agent_runtime_arn`,
@@ -135,14 +143,65 @@ not an authorizer. This is deliberate:
 - The real risk on a public read API is **abuse / runaway cost** (scraping,
   hammering), which **throttling** addresses directly by capping requests/sec and
   burst. That's the right tool for this threat, and it's cheap.
-- **Authentication is deferred until there's something to protect** — i.e. when
-  we add write/admin endpoints (creating products, the presigned image upload) or
-  user features (cart, orders). At that point we attach a **Cognito JWT
-  authorizer** to *those routes only* (HTTP API supports this natively) and leave
-  the catalog reads public.
+- **Admin/write endpoints are authenticated.** Now that there's an admin area
+  (sales tracking, orders), a **Cognito JWT authorizer** guards the
+  `ANY /admin/{proxy+}` route while the catalog reads stay public. See the next
+  section.
 
-So: throttling now (fits a public catalog), auth later (scoped to non-public
-routes), rather than bolting on user auth the app doesn't yet have.
+So: throttling for the public catalog, scoped JWT auth for the admin routes,
+rather than blanket auth over data that's meant to be open.
+
+## Admin auth (Cognito)
+
+The admin area is gated by a Cognito user pool wired to the HTTP API:
+
+- **User pool** with **self-signup disabled** (`allow_admin_create_user_only`).
+  The only accounts are the two demo users Terraform creates: `user-normal` and
+  `user-admin`. `user-admin` belongs to the `admins` group; group membership is
+  the admin flag and surfaces in the ID token's `cognito:groups` claim.
+- **App client** is a public SPA client (no secret) with `USER_PASSWORD_AUTH`
+  enabled so the frontend can sign a demo user in silently when switching
+  accounts.
+- **JWT authorizer** on `ANY /admin/{proxy+}` validates the token's signature,
+  issuer, and audience (the app client id). It does **not** check the group; the
+  backend reads `cognito:groups` to separate admins from normal users. Because
+  the audience check is against the `aud` claim, the frontend must send the **ID
+  token** (Cognito access tokens carry `client_id` instead of `aud`); the ID
+  token also carries the group claim the backend needs.
+- The `/admin/{proxy+}` route is more specific than `$default`, so only it is
+  locked down. The public catalog continues to hit the open `$default` route.
+
+The two demo passwords are inputs (`demo_normal_password`, `demo_admin_password`,
+both `sensitive`). They are **not real secrets** — the frontend bundles them so
+the "switch user" action can log in without a form, and the accounts only unlock
+this demo's dashboard. Override them per environment via tfvars if you like.
+
+## Cost posture (and what a budgeted setup would change)
+
+This is a portfolio/demo project, so the deliberate goal is a **~$0 AWS bill**.
+The security/operational choices below are picked for cost, and each one notes
+what we'd do instead with a real budget:
+
+- **Cognito Lite tier, no advanced security / threat protection.** Lite (pinned
+  via `user_pool_tier`) covers everything used here: app clients, groups,
+  `USER_PASSWORD_AUTH`, JWTs. Threat protection (compromised-credential and
+  adaptive-auth checks) lives in the **Plus** tier and bills per MAU, so it's off.
+  _With budget:_ move to the **Plus** tier for threat protection, enforce **MFA**,
+  and turn on **WAF** in front of the API/CloudFront.
+- **Demo credentials bundled in the frontend.** Acceptable only because the
+  accounts are powerless throwaways. _With budget / real users:_ no shared demo
+  logins — real per-user sign-up (or an IdP/SSO federation), secrets never shipped
+  to the client, and the admin role granted by group, not a known password.
+- **No date GSI on the orders table; the dashboard scans and aggregates in-app.**
+  Fine at demo volume and avoids paying for extra index capacity. _With budget /
+  scale:_ add a GSI (e.g. by date) or precompute rollups so metrics don't scan
+  the whole table.
+- **Provisioned 5/5 DynamoDB to stay in the always-free 25/25 tier.** _With
+  budget / spiky traffic:_ switch to **on-demand** billing and enable
+  **point-in-time recovery** for the orders table.
+- **Rate limiting instead of WAF; local Terraform state.** _With budget:_ AWS
+  **WAF** managed rules on the public surface, and **remote state** (S3 + a lock
+  table) for safe team/CI applies.
 
 ## Notes
 
@@ -150,6 +209,18 @@ routes), rather than bolting on user auth the app doesn't yet have.
 - The `aws.us_east_1` provider is a required `configuration_alias` (for the
   CloudFront site cert) — callers must always pass it, even with no custom domain.
 - Only one GitHub OIDC provider per account per URL — import an existing one.
+
+## Releasing
+
+The module is consumed by tag (`?ref=vX.Y.Z`). Tagging is automated:
+
+1. In your PR, bump the `VERSION` file (e.g. `0.4.0`). Pick the bump deliberately
+   (minor for new resources/inputs, patch for fixes), since the stack pins to it.
+2. Merge to `main`. The `tag-release` workflow reads `VERSION` and pushes the
+   matching `v<VERSION>` tag (skipping if it already exists).
+3. Point the stack's `main.tf` `source` at the new tag and apply.
+
+The workflow only fires when `VERSION` changes, so ordinary merges don't tag.
 
 ## Related
 
