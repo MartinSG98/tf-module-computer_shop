@@ -81,3 +81,21 @@ variable "api_throttle_burst_limit" {
   type        = number
   default     = 40
 }
+
+# The demo passwords are not real secrets: the frontend bundles them so the
+# "switch user" action can sign in silently, and the accounts only unlock this
+# demo's admin dashboard. They are still marked sensitive so they stay out of
+# plan/apply logs. Override per environment via tfvars if you prefer.
+variable "demo_normal_password" {
+  description = "Password for the demo 'user-normal' Cognito account (non-admin)."
+  type        = string
+  default     = "DemoNormal123"
+  sensitive   = true
+}
+
+variable "demo_admin_password" {
+  description = "Password for the demo 'user-admin' Cognito account (admins group)."
+  type        = string
+  default     = "DemoAdmin123"
+  sensitive   = true
+}
