@@ -170,6 +170,12 @@ The admin area is gated by a Cognito user pool wired to the HTTP API:
   token also carries the group claim the backend needs.
 - The `/admin/{proxy+}` route is more specific than `$default`, so only it is
   locked down. The public catalog continues to hit the open `$default` route.
+- **CORS preflight** is handled by a separate, unauthenticated
+  `OPTIONS /admin/{proxy+}` route. Browsers send preflight `OPTIONS` with no
+  Authorization header, so routing them through the JWT authorizer would 401 the
+  preflight and break every admin call from the browser. This explicit OPTIONS
+  route lets preflights reach the Lambda so FastAPI's CORS middleware answers
+  them, while the authenticated methods still go through the JWT route.
 
 The two demo passwords are inputs (`demo_normal_password`, `demo_admin_password`,
 both `sensitive`). They are **not real secrets** — the frontend bundles them so

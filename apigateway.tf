@@ -50,6 +50,18 @@ resource "aws_apigatewayv2_route" "admin" {
   authorizer_id      = aws_apigatewayv2_authorizer.cognito.id
 }
 
+# CORS preflight for the admin routes. Browsers send OPTIONS with no
+# Authorization header, so it must NOT go through the JWT authorizer (which
+# would reject it with 401 and break the preflight, blocking every admin call
+# from the browser). This explicit OPTIONS route is more specific than the ANY
+# route above, so preflights reach the Lambda unauthenticated and FastAPI's CORS
+# middleware answers them; the real GET/POST still hit the authorized route.
+resource "aws_apigatewayv2_route" "admin_options" {
+  api_id    = aws_apigatewayv2_api.http.id
+  route_key = "OPTIONS /admin/{proxy+}"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
+}
+
 # $default stage means clean URLs with no stage path prefix.
 resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
